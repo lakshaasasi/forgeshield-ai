@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/lakshaasasi/forgeshield-ai)
 
 ## 🌐 Live Demo
-👉 [Try ForgeShield AI Live](https://forgeshield-ai-eawkw.thinkroot.app/)
+👉 [Try ForgeShield AI Live](https://app.thinkroot.dev/apps/33aca154-f698-45b1-8503-d153ec40b7f8)
 
 > Upload any document to detect forgery instantly!
 
