@@ -49,6 +49,8 @@ python app.py
 ---
 
 ## 👥 Team
-Built for **NIT Hackathon** by **TEAM : NEXUS**
+Built for **NIT Hackathon** by **TEAM :NEXUS**
+
+
 
 
