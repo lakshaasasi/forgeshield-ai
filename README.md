@@ -1,4 +1,4 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/afefa1fa-aecc-4de2-9c0f-4761349f5885" />
+
 # 🛡️ ForgeShield AI — Document Forgery Detection
 
 A web application that detects forged documents using AI, image processing, and OCR.
@@ -33,4 +33,4 @@ python app.py
 3. Get instant forgery detection results
 
 ## 👥 Team
-- Built for NIT Hackathon by **lakshaa**
+- Built for NIT Hackathon by **TEAM : NEXUS **
