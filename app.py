@@ -1,31 +1,49 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import os
-from detector import analyze_document
-
-app = Flask(__name__)
+from werkzeug.utils import secure_filename
+import detector
+ 
+app = Flask(__name__, template_folder='html_pages')
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'webp'}
 os.makedirs('uploads', exist_ok=True)
-os.makedirs('static', exist_ok=True)
-
-ALLOWED = {'png', 'jpg', 'jpeg', 'pdf', 'bmp', 'tiff'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED
-
-@app.route('/', methods=['GET', 'POST'])
+ 
+def allowed_file(f):
+    return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+ 
+@app.route('/')
 def index():
-    result = None
-    error = None
-    if request.method == 'POST':
-        file = request.files.get('document')
-        if not file or file.filename == '':
-            error = "Please select a file!"
-        elif not allowed_file(file.filename):
-            error = "Only JPG, PNG, PDF files allowed!"
-        else:
-            path = os.path.join('uploads', file.filename)
-            file.save(path)
-            result = analyze_document(path)
-    return render_template('index.html', result=result, error=error)
-
+    return render_template('index.html')
+ 
+@app.route('/result')
+def result():
+    return render_template('result.html')
+ 
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    file = request.files['file']
+    if not file or file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Only PDF, PNG, JPG, JPEG, WEBP allowed'}), 400
+ 
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+ 
+    try:
+        result = detector.analyze_document(filepath)
+        result['filename'] = filename
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+ 
 if __name__ == '__main__':
     app.run(debug=True)
+ 
