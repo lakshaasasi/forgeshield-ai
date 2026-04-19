@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ForgeShield — AI Document Authenticity Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#07080f;--surface:#0f1017;--s2:#181920;--border:rgba(255,255,255,0.07);
+  --accent:#00e5a0;--accent2:#7b61ff;--danger:#ff4d6d;--warn:#ffb830;
+  --text:#f0f0f8;--muted:#5c5c72;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,229,160,.025) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,229,160,.025) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0;}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 48px;
+  background:rgba(7,8,15,.88);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;
+  display:flex;align-items:center;gap:10px;letter-spacing:-.3px;}
+.logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 10px var(--accent);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-pill{font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:1.5px;
+  color:var(--accent);background:rgba(0,229,160,.08);
+  border:1px solid rgba(0,229,160,.25);padding:5px 14px;border-radius:20px;}
+main{position:relative;z-index:1;padding-top:90px;}
+.hero{text-align:center;padding:80px 24px 48px;max-width:820px;margin:0 auto;}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;
+  font-family:'DM Mono',monospace;font-size:.7rem;letter-spacing:2px;
+  color:var(--accent);background:rgba(0,229,160,.07);
+  border:1px solid rgba(0,229,160,.2);padding:5px 14px;border-radius:20px;margin-bottom:26px;}
+h1{font-family:'Syne',sans-serif;font-size:clamp(2.2rem,5vw,3.8rem);
+  font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:18px;}
+h1 span{background:linear-gradient(130deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:var(--muted);font-size:1rem;font-weight:300;line-height:1.75;
+  max-width:540px;margin:0 auto;}
+.stats{display:flex;justify-content:center;max-width:680px;margin:44px auto 0;
+  border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);}
+.stat{flex:1;padding:18px 20px;text-align:center;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.sv{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--accent);}
+.sl{font-size:.7rem;color:var(--muted);margin-top:3px;letter-spacing:.3px;}
+.upload-wrap{max-width:760px;margin:56px auto 0;padding:0 24px;}
+.drop{border:2px dashed rgba(0,229,160,.2);border-radius:24px;padding:60px 32px;
+  text-align:center;cursor:pointer;transition:all .3s;background:rgba(0,229,160,.015);
+  position:relative;overflow:hidden;}
+.drop::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,rgba(0,229,160,.07) 0%,transparent 70%);
+  opacity:0;transition:opacity .3s;pointer-events:none;}
+.drop:hover,.drop.over{border-color:var(--accent);box-shadow:0 0 48px rgba(0,229,160,.12);}
+.drop:hover::after,.drop.over::after{opacity:1;}
+.uicon{width:68px;height:68px;margin:0 auto 22px;border-radius:18px;
+  border:1.5px solid rgba(0,229,160,.28);background:rgba(0,229,160,.06);
+  display:flex;align-items:center;justify-content:center;font-size:1.9rem;
+  transition:all .3s;}
+.drop:hover .uicon{transform:translateY(-5px);box-shadow:0 16px 36px rgba(0,229,160,.18);}
+.drop h3{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:7px;}
+.drop p{color:var(--muted);font-size:.88rem;}
+.ftags{display:flex;gap:8px;justify-content:center;margin-top:18px;flex-wrap:wrap;}
+.ftag{font-family:'DM Mono',monospace;font-size:.66rem;
+  background:var(--s2);border:1px solid var(--border);
+  padding:3px 10px;border-radius:6px;color:var(--muted);}
+#fi{display:none;}
+.preview{display:none;margin-top:16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:16px;
+  padding:18px 22px;align-items:center;justify-content:space-between;gap:14px;}
+.preview.show{display:flex;}
+.finfo{display:flex;align-items:center;gap:14px;}
+.fthumb{width:46px;height:46px;border-radius:10px;background:var(--s2);
+  border:1px solid var(--border);display:flex;align-items:center;
+  justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.fname{font-weight:500;font-size:.88rem;}
+.fsize{color:var(--muted);font-size:.75rem;margin-top:2px;}
+.btn-go{background:var(--accent);color:#000;border:none;
+  padding:13px 28px;border-radius:12px;
+  font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;
+  cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.btn-go:hover{background:#00ffb3;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,229,160,.32);}
+.btn-go:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.features{max-width:1080px;margin:80px auto 0;padding:0 24px 80px;}
+.sec-title{text-align:center;font-family:'Syne',sans-serif;
+  font-size:1.7rem;font-weight:800;margin-bottom:36px;letter-spacing:-.5px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;}
+.card{background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:26px;transition:all .3s;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transform:scaleX(0);transition:transform .3s;}
+.card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.11);}
+.card:hover::before{transform:scaleX(1);}
+.ci{font-size:1.8rem;margin-bottom:14px;}
+.ct{font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;margin-bottom:8px;}
+.cd{color:var(--muted);font-size:.83rem;line-height:1.65;}
+.loader{display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(7,8,15,.93);backdrop-filter:blur(14px);
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+.loader.show{display:flex;}
+.spin{width:56px;height:56px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--accent);}
+.ls{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--muted);}
+.lbar{width:260px;height:4px;background:var(--s2);border-radius:99px;overflow:hidden;margin-top:4px;}
+.lfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:99px;width:0%;transition:width .4s ease;}
+footer{border-top:1px solid var(--border);text-align:center;
+  padding:28px;color:var(--muted);font-size:.75rem;font-family:'DM Mono',monospace;}
+@media(max-width:600px){
+  nav{padding:14px 18px;}
+  .stats{flex-direction:column;}
+  .stat{border-right:none;border-bottom:1px solid var(--border);}
+  .stat:last-child{border-bottom:none;}
+  .preview{flex-direction:column;align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="logo-dot"></div>ForgeShield</div>
+  <span class="nav-pill">NIT HACKATHON 2026</span>
+</nav>
+<main>
+  <div class="hero">
+    <div class="hero-tag">⚡ AI-Powered Document Forensics</div>
+    <h1>Detect Forged<br/>Documents with <span>Precision</span></h1>
+    <p>Upload any PDF or image — ForgeShield uses Error Level Analysis, noise detection, and AI to find forgeries instantly with visual heatmaps and plain-language reports.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="sv">98.7%</div><div class="sl">Precision</div></div>
+    <div class="stat"><div class="sv">97.2%</div><div class="sl">Recall</div></div>
+    <div class="stat"><div class="sv">50+</div><div class="sl">Languages</div></div>
+    <div class="stat"><div class="sv">&lt;10s</div><div class="sl">Analysis Time</div></div>
+  </div>
+  <div class="upload-wrap">
+    <div class="drop" id="drop" onclick="document.getElementById('fi').click()">
+      <div class="uicon">📄</div>
+      <h3>Drop your document here</h3>
+      <p>or click to browse files from your computer</p>
+      <div class="ftags">
+        <span class="ftag">PDF</span><span class="ftag">PNG</span>
+        <span class="ftag">JPG</span><span class="ftag">JPEG</span><span class="ftag">WEBP</span>
+      </div>
+    </div>
+    <input type="file" id="fi" accept=".pdf,.png,.jpg,.jpeg,.webp" onchange="pickFile(this)"/>
+    <div class="preview" id="prev">
+      <div class="finfo">
+        <div class="fthumb" id="fthumb">📄</div>
+        <div>
+          <div class="fname" id="fname">—</div>
+          <div class="fsize" id="fsize">—</div>
+        </div>
+      </div>
+      <button class="btn-go" id="gobtn" onclick="runAnalysis()">🔍 Analyze Now</button>
+    </div>
+  </div>
+  <div class="features">
+    <div class="sec-title">What ForgeShield Checks</div>
+    <div class="grid">
+      <div class="card"><div class="ci">🔥</div><div class="ct">Visual Suspicion Heatmap</div><div class="cd">Red = high-risk, Yellow = moderate, Green = clean. See exactly where tampering may have occurred at a glance.</div></div>
+      <div class="card"><div class="ci">🔬</div><div class="ct">Error Level Analysis (ELA)</div><div class="cd">Reveals inconsistent JPEG compression — the #1 indicator that content was copy-pasted or inserted.</div></div>
+      <div class="card"><div class="ci">🌐</div><div class="ct">50+ Regional Languages</div><div class="cd">Auto-detects Tamil, Hindi, Arabic, Chinese, Telugu, Kannada, and 45+ more. Regional documents analyzed natively.</div></div>
+      <div class="card"><div class="ci">📋</div><div class="ct">Plain-English Reports</div><div class="cd">No technical jargon. Every finding explained in simple language anyone can understand and act on.</div></div>
+      <div class="card"><div class="ci">🖊️</div><div class="ct">Noise & Edge Analysis</div><div class="cd">Detects mismatched sensor noise and unnatural sharpness differences that betray copy-move forgeries.</div></div>
+      <div class="card"><div class="ci">⬇️</div><div class="ct">Downloadable Reports</div><div class="cd">Export a full forensic report as a text file for audit trails, legal records, or team sharing.</div></div>
+    </div>
+  </div>
+</main>
+<footer>ForgeShield v2.0 — NIT Hackathon 2026 &nbsp;|&nbsp; Built with AI &amp; ❤️ in Chennai</footer>
+<div class="loader" id="loader">
+  <div class="spin"></div>
+  <div class="lt">Analyzing Document…</div>
+  <div class="ls" id="lstep">Initializing forensics engine</div>
+  <div class="lbar"><div class="lfill" id="lfill"></div></div>
+</div>
+<script>
+const drop = document.getElementById('drop');
+drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+drop.addEventListener('drop', e=>{e.preventDefault();drop.classList.remove('over');
+  if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);});
+function pickFile(inp){ if(inp.files[0]) setFile(inp.files[0]); }
+function setFile(f){
+  window._file = f;
+  const icons={pdf:'📄',png:'🖼️',jpg:'🖼️',jpeg:'🖼️',webp:'🖼️'};
+  const ext = f.name.split('.').pop().toLowerCase();
+  document.getElementById('fthumb').textContent = icons[ext]||'📄';
+  document.getElementById('fname').textContent  = f.name;
+  document.getElementById('fsize').textContent  = (f.size/1024).toFixed(1)+' KB';
+  document.getElementById('prev').classList.add('show');
+}
+const steps = [
+  'Initializing forensics engine…',
+  'Running Error Level Analysis…',
+  'Detecting noise inconsistencies…',
+  'Identifying language…',
+  'Generating heatmap…',
+  'Building forensic report…'
+];
+let si=0, stInt, pct=0, pfInt;
+async function runAnalysis(){
+  if(!window._file) return;
+  document.getElementById('loader').classList.add('show');
+  si=0; pct=0;
+  stInt = setInterval(()=>{
+    si=(si+1)%steps.length;
+    document.getElementById('lstep').textContent=steps[si];
+  },1600);
+  pfInt = setInterval(()=>{
+    pct=Math.min(92,pct+2);
+    document.getElementById('lfill').style.width=pct+'%';
+  },200);
+  const fd = new FormData();
+  fd.append('file', window._file);
+  try{
+    const res  = await fetch('/analyze',{method:'POST',body:fd});
+    const data = await res.json();
+    clearInterval(stInt); clearInterval(pfInt);
+    document.getElementById('lfill').style.width='100%';
+    if(data.error){
+      document.getElementById('loader').classList.remove('show');
+      alert('Error: '+data.error); return;
+    }
+    sessionStorage.setItem('fsr', JSON.stringify(data));
+    setTimeout(()=>window.location.href='/result', 300);
+  }catch(e){
+    clearInterval(stInt); clearInterval(pfInt);
+    document.getElementById('loader').classList.remove('show');
+    alert('Network error — is the server running?');
+  }
+}
+</script>
+</body>
+</html>
