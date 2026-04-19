@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/lakshaasasi/forgeshield-ai)
 
 ## 🌐 Live Demo
-👉 [Try ForgeShield AI Live](https://forgeshield-ai.onrender.com)
+👉 [Try ForgeShield AI Live](http://localhost:5000/)
 
 > Upload any document to detect forgery instantly!
 
